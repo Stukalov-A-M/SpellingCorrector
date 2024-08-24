@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spell Checker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+        }
+        .highlight {
+            background-color: yellow;
+            cursor: pointer;
+        }
+        .suggestions {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            width: 100%;
+            max-width: 354px;
+        }
+        #highlighted-text {
+            width: 100%;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+  <div class="container" style="display: grid;gap: 0;padding: 80px;padding-top: 0;border-radius: 10px;background: #e2e2e299;box-shadow: 0px 0px 15px;">
+
+    <h1 style="display: flex;justify-content: center;">Interactive Spell Checker</h1>
+
+    <form id="spell-check-form">
+        <textarea id="text-input" placeholder="Enter text to check..."></textarea><br><br>
+        <button type="button" onclick="checkSpelling()">Check Spelling</button>
+    </form>
+
+    <div id="highlighted-text"></div>
+
+    <div id="suggestions" class="suggestions" style="display:none;">
+        <h2>Suggestions:</h2>
+        <p id="suggestions-text"></p>
+    </div>
+
+  </div>
+
+
+
+    <script>
+      function checkSpelling() {
+          const text = document.getElementById('text-input').value;
+
+          // Send the text to the server
+          fetch('/spellcheck', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ text: text }),
+          })
+          .then(response => response.json())
+          .then(data => {
+              console.log(data);  // Debug: log the response data to check its format
+              let newText = text;
+              data.forEach(error => {
+                  const word = error.word;
+                  const safeSuggestions = JSON.stringify(error.suggestions).replace(/"/g, '&quot;'); // Escape double quotes
+                  const regex = new RegExp('\\b' + word + '\\b', 'g');
+                  newText = newText.replace(regex, `<span class="highlight" onclick="showSuggestions('${word}', ${safeSuggestions})">${word}</span>`);
+              });
+              document.getElementById('highlighted-text').innerHTML = newText;
+              document.getElementById('highlighted-text').style.display = 'block';
+          })
+          .catch(error => console.error('Error:', error));
+      }
+
+      function showSuggestions(word, suggestions) {
+          console.log(`Word: ${word}, Suggestions: ${suggestions}`);  // Debug
+          const suggestionsText = suggestions.length > 0 ? `Suggestions for "${word}": ${suggestions.join(', ')}` : `No suggestions available for "${word}".`;
+          document.getElementById('suggestions-text').textContent = suggestionsText;
+          document.getElementById('suggestions').style.display = 'block';
+      }
+
+    </script>
+</body>
+</html>
